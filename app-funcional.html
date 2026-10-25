@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pusheen Fit">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000%22/><text y=%2265%22 x=%2220%22 font-size=%2250%22>🐱</text></svg>">
+    <title>Pusheen Fit v3.0 - Clínico</title>
+    <style>
+        /* --- SISTEMA VISUAL (CSS) --- */
+        :root {
+            --bg-puro: #000000; --bg-tarjeta: #09090b; --bg-control: #18181b; --borde: #27272a;
+            --accent: #22c55e; --texto-prio: #ffffff; --texto-sec: #a1a1aa; --azul-clinico: #38bdf8;
+            --oro: #fbbf24; --oro-fondo: rgba(251, 191, 36, 0.05); --alerta: #ef4444;
+        }
+        body[data-theme="kenia"] {
+            --bg-puro: #fff0f5; --bg-tarjeta: #ffffff; --bg-control: #ffe4e1; --borde: #ffb6c1;
+            --accent: #ff69b4; --texto-prio: #4a4a4a; --texto-sec: #8b7b8b; --azul-clinico: #2a9d8f;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg-puro); font-family: -apple-system, sans-serif; color: var(--texto-prio); line-height: 1.4; touch-action: pan-y; user-select: none; padding-top: env(safe-area-inset-top); overflow-x: hidden;}
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: var(--bg-tarjeta); border-bottom: 1px solid var(--borde); position: sticky; top: 0; z-index: 100; }
+        .pusheen-profile { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--borde); background: #333; display: flex; align-items: center; justify-content: center; font-size: 24px;}
+        .profile-selector { display: flex; gap: 4px; background: var(--bg-control); padding: 4px; border-radius: 12px; border: 1px solid var(--borde); }
+        .profile-btn { border: none; background: transparent; color: var(--texto-sec); font-size: 0.75rem; font-weight: 900; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+        .profile-btn.active { background: var(--bg-puro); color: var(--texto-prio); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .btn-metronomo { background: #111; border: 1px solid #333; color: #fff; width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        .btn-metronomo.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(34,197,94,0.4); }
+        
+        #app-canvas { padding: 16px; padding-bottom: 120px; max-width: 500px; margin: 0 auto; animation: fade 0.3s ease; }
+        @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .routine-selector { width: 100%; padding: 12px; font-size: 0.9rem; font-weight: 900; background: var(--bg-tarjeta); color: var(--texto-prio); border: 1px solid var(--borde); border-radius: 14px; margin-bottom: 16px; text-align: center; outline: none; }
+        .card-exercise { background: var(--bg-tarjeta); border: 1px solid var(--borde); border-radius: 20px; padding: 16px; margin-bottom: 16px; transition: 0.3s; width: 100%; position: relative;}
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .card-title { font-size: 1.1rem; font-weight: 900; }
+        .badge-musculo { font-size: 0.65rem; background: var(--bg-control); padding: 4px 8px; border-radius: 6px; font-weight: 800; color: var(--texto-sec); text-transform: uppercase; text-align:right; }
+        .clinical-box { background: var(--bg-puro); padding: 12px; border-radius: 0 12px 12px 0; font-size: 0.75rem; color: var(--texto-sec); margin-bottom: 16px; border: 1px solid var(--borde); border-left: 3px solid var(--azul-clinico); }
+        .badge-alerta { color: #ef4444; font-weight: 900; }
+        
+        .history-box { background: var(--bg-control); padding: 10px; border-radius: 12px; margin-bottom: 12px; font-size: 0.75rem; font-weight: 800; color: var(--texto-sec); text-align: center; border: 1px dashed var(--borde); }
+        .history-item { color: var(--accent); font-family: monospace; font-size: 0.85rem; margin-top: 4px; display: inline-block; background: var(--bg-puro); padding: 4px 8px; border-radius: 6px; margin-right: 4px; }
+        .history-item.aprox { color: var(--texto-sec); border: 1px dashed var(--texto-sec); opacity: 0.7; }
+        
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+        .cell-input { background: var(--bg-puro); padding: 8px; border-radius: 16px; border: 1px solid var(--borde); display: flex; flex-direction: column; }
+        .cell-title { font-size: 0.65rem; font-weight: 900; color: var(--texto-sec); text-transform: uppercase; margin-bottom: 8px; text-align: center; }
+        .flex-controls { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+        .btn-step { background: var(--bg-control); border: 1px solid var(--borde); color: var(--texto-prio); width: 36px; height: 36px; border-radius: 8px; font-size: 1.5rem; font-weight: 900; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        input[type="number"], input[type="text"] { background: transparent; border: none; color: var(--texto-prio); font-size: 1.5rem; font-weight: 900; text-align: center; width: 100%; min-width: 0; padding: 0; outline: none; }
+        
+        .btn-record { display: block; width: 100%; height: 50px; background: linear-gradient(135deg, var(--accent) 0%, #16a34a 100%); border: none; border-radius: 12px; color: white; font-weight: 900; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; text-align: center; margin-bottom: 8px; box-shadow: 0 4px 15px rgba(34,197,94,0.3); }
+        .btn-aprox { background: var(--bg-puro); color: var(--texto-sec); border: 1px dashed var(--texto-sec); width: 100%; height: 36px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; cursor: pointer; margin-bottom: 12px; text-transform: uppercase; }
+        .btn-undo { background: var(--bg-control); border: 1px solid var(--borde); color: var(--texto-prio); width: 100%; height: 36px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; cursor: pointer; text-transform: uppercase; }
+        .btn-tecnica { background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: var(--azul-clinico); width: 100%; height: 36px; border-radius: 10px; font-size: 0.75rem; font-weight: 900; cursor: pointer; text-transform: uppercase; margin-bottom: 12px;}
+        .btn-finish-workout { background: linear-gradient(135deg, var(--oro) 0%, #d97706 100%); color: #000; width: 100%; height: 56px; border-radius: 16px; font-weight: 900; font-size: 1.1rem; margin-top: 16px; border: none; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(251, 191, 36, 0.4); }
+        
+        .sets-header { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 900; color: var(--texto-sec); margin-bottom: 6px; }
+        .sets-bar-bg { height: 6px; background: var(--bg-control); border-radius: 3px; display: flex; overflow: hidden; margin-bottom: 12px; width: 100%; }
+        .sets-bar-segment { flex: 1; border-right: 1px solid var(--bg-tarjeta); }
+        .sets-bar-segment.filled { background: var(--accent); }
+        
+        .focus-nav-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(24, 24, 27, 0.85); border: 1px solid var(--borde); border-radius: 16px; padding: 6px; backdrop-filter: blur(10px); margin-top: 16px; }
+        .btn-focus-nav { background: var(--bg-puro); color: var(--texto-prio); border: 1px solid var(--borde); padding: 12px 16px; border-radius: 12px; font-weight: 900; font-size: 0.8rem; flex: 1; cursor: pointer; text-align: center;}
+        .btn-focus-nav:disabled { opacity: 0.2; cursor: not-allowed; }
+        .focus-indicator { flex: 1.5; text-align: center; font-weight: 900; color: var(--texto-sec); font-size: 0.85rem; }
+        
+        .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; background: rgba(9, 9, 11, 0.95); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom); z-index: 1000; backdrop-filter: blur(20px); }
+        .nav-btn { background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex: 1; padding: 10px 0; opacity: 0.5; transition: 0.2s; }
+        .nav-btn.active { opacity: 1; transform: translateY(-2px); }
+        .nav-icon { font-size: 1.4rem; }
+        .nav-text { font-size: 0.6rem; font-weight: 800; color: var(--texto-prio); }
+        
+        .global-timer { position: fixed; bottom: 85px; left: 50%; transform: translateX(-50%); width: 92%; max-width: 400px; background: rgba(34, 197, 94, 0.15); border: 1px solid var(--accent); border-radius: 16px; padding: 12px; z-index: 998; backdrop-filter: blur(10px); }
+        .timer-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .timer-lbl { font-size: 0.75rem; font-weight: 900; color: var(--texto-prio); }
+        .timer-val { font-size: 1.8rem; font-weight: 900; font-family: monospace; color: var(--accent); }
+        .timer-actions { display: flex; gap: 8px; }
+        .btn-timer-macro, .btn-timer-skip { flex: 1; padding: 10px; border-radius: 10px; font-weight: 900; font-size: 0.8rem; border: none; cursor: pointer; }
+        .btn-timer-macro { background: var(--bg-puro); color: var(--texto-prio); border: 1px solid var(--borde); }
+        .btn-timer-skip { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .timer-progress-bg { height: 4px; background: var(--bg-puro); border-radius: 2px; overflow: hidden; margin-top: 10px; }
+        .timer-progress-fill { height: 100%; background: var(--accent); width: 100%; }
+        
+        #toast-message { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: var(--texto-prio); color: var(--bg-puro); padding: 12px 24px; border-radius: 30px; font-weight: 900; font-size: 0.85rem; z-index: 10000; display: none; opacity: 0; transition: opacity 0.3s; text-align: center; max-width: 90%; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .toast-oro { background: var(--oro) !important; color: #000 !important; font-size: 0.95rem !important; }
+
+        /* --- MODALES --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; backdrop-filter: blur(10px); }
+        .triage-card { background: var(--bg-tarjeta); border: 1px solid var(--borde); border-radius: 24px; padding: 24px; width: 100%; max-width: 400px; text-align: center; }
+        .triage-title { font-size: 1.2rem; font-weight: 900; margin-bottom: 6px; color: var(--texto-prio); text-transform:uppercase;}
+        .triage-subtitle { font-size: 0.8rem; color: var(--texto-sec); margin-bottom: 24px; font-weight: 800; font-style: italic; }
+        .btn-triage { width: 100%; padding: 16px; margin-top: 12px; border-radius: 12px; font-weight: 900; font-size: 1rem; border: none; cursor: pointer; text-transform: uppercase; background: var(--accent); color:#fff; transition: transform 0.1s; }
+        .btn-triage:active { transform: scale(0.98); }
+
+        /* TABLA MÓDULOS DE DESPACHO */
+        .dispatch-btn { width: 100%; padding: 14px; background: var(--bg-puro); border: 1px solid var(--borde); border-radius: 12px; color: var(--texto-prio); font-weight: 900; font-size: 0.85rem; text-align: left; margin-bottom: 8px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .dispatch-btn:active { transform: scale(0.98); }
+        .dispatch-btn.audit { border-color: var(--oro); color: var(--oro); }
+        .dispatch-btn.rescate { border-color: #ef4444; color: #fca5a5; }
+
+        /* --- MAPA ANATÓMICO PUSHEEN --- */
+        .mapa-anatomico { overflow: hidden; }
+        .mapa-anatomico svg { display: block; width: 100%; height: auto; }
+        .borde-exterior { stroke: #3E2723; stroke-width: 6px; stroke-linecap: round; stroke-linejoin: round; }
+        .division-interna { stroke: #3E2723; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; opacity: 0.85; }
+        svg g[id^="m-"] { cursor: pointer; transition: filter 0.3s ease; }
+        svg g[id^="m-"]:hover { filter: drop-shadow(0 0 8px rgba(62, 39, 35, 0.5)); }
+        .glow { animation: pulso-clinico 1.6s infinite ease-in-out; }
+        @keyframes pulso-clinico {
+            0%, 100% { filter: drop-shadow(0 0 3px var(--accent, #22c55e)) drop-shadow(0 0 8px var(--accent, #22c55e)); }
+            50% { filter: drop-shadow(0 0 10px var(--accent, #22c55e)) drop-shadow(0 0 20px var(--accent, #22c55e)); }
+        }
+
+    </style>
+</head>
+<body data-theme="julio">
+
+    <!-- TRIAGE PRE-VUELO (OBJETIVO) -->
+    <div id="modal-triage" class="modal-overlay" style="display:none;">
+        <div class="triage-card">
+            <div class="triage-title">🩺 Evaluación de Daños</div>
+            <div class="triage-subtitle" id="triage-merly-quote">El ego miente, la fisiología no. Ingresa tus horas de sueño real. Compramos tiempo para verla crecer.</div>
+            
+            <div style="background:var(--bg-puro); padding:16px; border-radius:16px; border:1px solid var(--borde); margin-bottom:16px;">
+                <label style="font-size:0.75rem; font-weight:900; color:var(--texto-sec); display:block; margin-bottom:8px;">HORAS DE SUEÑO:</label>
+                <input type="number" id="input-sueno" inputmode="decimal" placeholder="Ej: 6.5" style="font-size:3rem; color:var(--accent); font-weight:900; text-align:center; width:100%; background:transparent; border:none; outline:none;">
+            </div>
+
+            <button class="btn-triage" onclick="evaluarSueno()">CALIBRAR SISTEMA</button>
+        </div>
+    </div>
+
+    <!-- MODAL VIDEO -->
+    <div id="modal-video" class="modal-overlay" style="display:none;">
+        <img id="video-player" src="" style="max-width:90%; max-height:60vh; border-radius:16px; border: 2px solid var(--borde); background: var(--bg-puro);">
+        <button onclick="document.getElementById('modal-video').style.display='none'" style="margin-top:24px; padding:16px 32px; background:var(--bg-tarjeta); color:var(--texto-prio); border:1px solid var(--borde); border-radius:12px; font-weight:900; font-size:1rem; cursor:pointer;">CERRAR VISOR</button>
+    </div>
+
+    <header class="top-bar">
+        <div style="font-weight:900; font-size:1.1rem; letter-spacing:1px; display:flex; align-items:center; gap:8px;">
+            <div class="pusheen-profile">🐱</div>
+            Pusheen Fit <span style="font-size:0.6rem; color:var(--accent); border:1px solid var(--accent); padding:2px 4px; border-radius:4px;">v3.0</span>
+        </div>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn-metronomo" id="btnMetro" onclick="controlMetronomo()">🔊</button>
+        </div>
+    </header>
+
+    <main id="app-canvas"></main>
+
+    <div id="global-rest-timer" class="global-timer" style="display:none;">
+        <div class="timer-info">
+            <span class="timer-lbl">⏳ RECUPERACIÓN (SWIPE ↔️)</span>
+            <span class="timer-val" id="rest-time-display">00:00</span>
+        </div>
+        <div class="timer-actions">
+            <button class="btn-timer-macro" onclick="ajustarDescanso(15)">+15s</button>
+            <button class="btn-timer-skip" onclick="cancelarDescanso()">OMITIR ⏩</button>
+        </div>
+        <div class="timer-progress-bg"><div class="timer-progress-fill" id="rest-progress-fill"></div></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn active" id="nav-entrenar" onclick="cambiarVista('entrenar')"><span class="nav-icon">🏋️</span><span class="nav-text">Ejecución</span></button>
+        <button class="nav-btn" id="nav-cardio" onclick="cambiarVista('cardio')"><span class="nav-icon">🫁</span><span class="nav-text">Longevidad</span></button>
+        <button class="nav-btn" id="nav-planeacion" onclick="cambiarVista('planeacion')"><span class="nav-icon">📋</span><span class="nav-text">Comando</span></button>
+        <button class="nav-btn" id="nav-metricas" onclick="cambiarVista('metricas')"><span class="nav-icon">📈</span><span class="nav-text">Clínico</span></button>
+    </nav>
+
+    <div id="toast-message"></div>
+
+    <script>
+        /* =========================================================================
+           JSON MAESTRO: Pusheen Fit v3.0 (Fuerza, Rescates, Auditorías BAM/HRR)
+           ========================================================================= */
+        const RAW_JSON = [
+          {
+            "routine_id": "TORSO_A_v1.0", "name": "SOEH: Torso A (Pectoral y Amplitud)", "frequency_type": "Frecuencia 2",
+            "blocks": [
+              { "block_id": "A", "block_type": "APS", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "A1", "name": "Press de Pecho Convergente", "musculo": "Pecho Superior", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 6, "max": 10 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/press_convergente.gif", "straps_required": false, "equipment_alternative": "Press con Mancuernas en Banco Plano", "safety_check": "Si los hombros se despegan del respaldo al empujar, detener serie.", "cue": "Abre el pecho al bajar. Junta tus bíceps en el centro al subir." },
+                  { "id": "A2", "name": "Remo en Máquina (Apoyado)", "musculo": "Espalda Media", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/remo_apoyado.gif", "straps_required": true, "equipment_alternative": "Remo con Mancuerna a Una Mano con Apoyo", "safety_check": "Si el pecho se despega del cojín para jalar, la repetición es nula.", "cue": "Manos como ganchos. Clava los codos hacia tus bolsillos." }
+              ]},
+              { "block_id": "B", "block_type": "APS", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "B1", "name": "Jalón al Pecho en Polea Alta", "musculo": "Dorsal Ancho", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/jalon_polea.gif", "straps_required": true, "equipment_alternative": "Jalón con Agarre Neutro Ancho", "safety_check": "Si arqueas la espalda baja en exceso para bajar la barra, reduce peso.", "cue": "Saca el pecho hacia el techo y tira de la barra hacia tu esternón." },
+                  { "id": "B2", "name": "Press Inclinado en Máquina Smith", "musculo": "Pecho Superior", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/press_smith.gif", "straps_required": false, "equipment_alternative": "Press Inclinado con Mancuernas (30 grados)", "safety_check": "Mantener los codos ligeramente metidos hacia adelante, nunca alineados con las orejas.", "cue": "Planta los hombros contra el banco. Baja al tercio superior del pecho." }
+              ]},
+              { "block_id": "C", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "C1", "name": "Curl Predicador en Máquina", "musculo": "Bíceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 0, 1, 0], "allow_partials": true, "gif_url": "videos/curl_predicador.gif", "straps_required": false, "equipment_alternative": "Curl Concentrado con Mancuerna", "safety_check": "No hiperextiendas los codos de forma brusca abajo para evitar tendinitis.", "cue": "Clava las axilas en el cojín. Mueve el peso exprimiendo el bíceps." },
+                  { "id": "C2", "name": "Extensión de Tríceps con Cuerda", "musculo": "Tríceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/triceps_cuerda.gif", "straps_required": false, "equipment_alternative": "Extensión de Tríceps con Barra Recta", "safety_check": "Los codos devono quedar inmóviles a los costados del torso.", "cue": "Separa la cuerda al final del recorrido y bloquea 1 segundo abajo." }
+              ]},
+              { "block_id": "D", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "D1", "name": "Elevaciones Laterales en Máquina", "musculo": "Hombro Lateral", "total_sets": 4, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [2, 0, 1, 1], "allow_partials": true, "gif_url": "videos/elevaciones_laterales.gif", "straps_required": false, "equipment_alternative": "Elevaciones Laterales en Polea Baja", "safety_check": "Si usas el balanceo del torso, la repetición es inválida.", "cue": "Empuja hacia las paredes, alejando las manos de tu cuerpo." },
+                  { "id": "D2", "name": "Dead Hang (Colgado Pasivo)", "musculo": "Agarre y Descompresión", "total_sets": 1, "target_rir": 0, "progression_type": "TIME_PROGRESSION", "metric_type": "time_seconds", "target_time_seconds": 120, "tempo": [0, 0, 0, 0], "allow_partials": false, "gif_url": "videos/dead_hang.gif", "straps_required": false, "equipment_alternative": "Sostén de barra olímpica fija", "safety_check": "Core pasivo y relajado para permitir la descompresión vertebral L4-L5.", "cue": "Relaja el cuello y la columna. Deja que el peso estire cada vértebra." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "PIERNA_A_v1.0", "name": "SOEH: Pierna A (Cuádriceps y Cadena Anterior)", "frequency_type": "Frecuencia 2",
+            "blocks": [
+              { "block_id": "01", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 180, "exercises": [
+                  { "id": "1", "name": "Sentadilla Hack", "musculo": "Cuádriceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 10 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/hack_squat.gif", "straps_required": false, "equipment_alternative": "Sentadilla en Máquina Smith (Pies adelantados)", "safety_check": "Los talones no deben levantarse de la plataforma en la parte profunda.", "cue": "Pies anclados. Empuja el piso hacia abajo alejándolo de ti." }
+              ]},
+              { "block_id": "02", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 180, "exercises": [
+                  { "id": "2", "name": "Prensa de Piernas (Pies bajos)", "musculo": "Cuádriceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 0, 1, 0], "allow_partials": true, "gif_url": "videos/prensa_piernas.gif", "straps_required": false, "equipment_alternative": "Sentadilla Pendulum", "safety_check": "Detener el descenso justo antes de que la zona lumbar se despegue del asiento.", "cue": "Baja controlado hasta que los cuádriceps toquen tu pecho." }
+              ]},
+              { "block_id": "B", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "B1", "name": "Extensión de Cuádriceps en Máquina", "musculo": "Cuádriceps Aislado", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/leg_extension.gif", "straps_required": false, "equipment_alternative": "Extensión Unilateral en Máquina", "safety_check": "Asegura firmemente tus glúteos contra el asiento jalando los manerales.", "cue": "Patea hacia arriba y pausa 1 segundo en la máxima contracción." },
+                  { "id": "B2", "name": "Curl de Isquiosurales Sentado", "musculo": "Isquiosurales", "total_sets": 4, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/curl_sentado.gif", "straps_required": false, "equipment_alternative": "Curl de Isquiosurales Tumbado", "safety_check": "Mantener el muslo superior firmemente presionado por el rodillo de seguridad.", "cue": "Empuja los talones hacia tus glúteos de forma fluida." }
+              ]},
+              { "block_id": "03", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 90, "exercises": [
+                  { "id": "3", "name": "Elevación de Talones en Máquina de Pie", "musculo": "Pantorrillas", "total_sets": 4, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [2, 2, 1, 0], "allow_partials": true, "gif_url": "videos/talones_pie.gif", "straps_required": false, "equipment_alternative": "Elevación de Talones en Máquina Smith", "safety_check": "Rodillas completamente bloqueadas (rectas) para aislar los gemelos.", "cue": "Pausa de 2 segundos en el fondo para estirar completamente antes de subir." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "TORSO_B_v1.0", "name": "SOEH: Torso B (Densidad Dorsal y Hombros)", "frequency_type": "Frecuencia 2",
+            "blocks": [
+              { "block_id": "A", "block_type": "APS", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "A1", "name": "Press de Hombros en Máquina Convergente", "musculo": "Deltoides Anterior", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/press_hombros.gif", "straps_required": false, "equipment_alternative": "Press de Hombros en Máquina Smith", "safety_check": "Mantén los codos apuntando ligeramente hacia el frente.", "cue": "Controla el descenso y empuja verticalmente de manera estable." },
+                  { "id": "A2", "name": "Jalón Unilateral en Máquina", "musculo": "Dorsal Ancho", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/jalon_unilateral.gif", "straps_required": true, "equipment_alternative": "Jalón Unilateral en Polea Alta con Maneral", "safety_check": "Mantén el torso fijo, sin rotarlo abruptamente para forzar el jalón.", "cue": "Deja que el peso estire el dorsal arriba antes de iniciar el tirón hacia la cadera." }
+              ]},
+              { "block_id": "B", "block_type": "APS", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "B1", "name": "Remo Gironda (Polea Baja)", "musculo": "Espalda Media", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 10 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/remo_gironda.gif", "straps_required": true, "equipment_alternative": "Remo en Barra T con Soporte de Pecho", "safety_check": "Espalda baja bloqueada. No te balancees hacia adelante y hacia atrás con el torso.", "cue": "Pecho alto, core apretado. Junta las escápulas atrás al final." },
+                  { "id": "B2", "name": "Peck Deck (Aperturas de Pecho)", "musculo": "Pecho", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/peck_deck.gif", "straps_required": false, "equipment_alternative": "Cruces de Polea Media con Banco Plano", "safety_check": "No permitas que las almohadillas lleven tus hombros a una hiperextensión dolorosa atrás.", "cue": "Imagina que abrazas un barril grande. Mantén codos fijos." }
+              ]},
+              { "block_id": "C", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "C1", "name": "Elevaciones Laterales en Polea Baja", "musculo": "Hombro Lateral", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [2, 0, 1, 1], "allow_partials": true, "gif_url": "videos/laterales_polea.gif", "straps_required": false, "equipment_alternative": "Elevaciones Laterales con Mancuerna", "safety_check": "Mantén el cable pasando por detrás o delante de tus piernas sin rozar bruscamente.", "cue": "Inicia el movimiento desde el codo, no desde la muñeca." },
+                  { "id": "C2", "name": "Peck Deck Inverso (Pájaros)", "musculo": "Hombro Posterior", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [2, 0, 1, 1], "allow_partials": true, "gif_url": "videos/pajaros.gif", "straps_required": false, "equipment_alternative": "Pájaros en Polea Alta Unilateral", "safety_check": "Evita retraer las escápulas por completo; el movimiento debe nacer del hombro posterior.", "cue": "Tira del peso hacia atrás usando solo la parte posterior del hombro." }
+              ]},
+              { "block_id": "D", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "D1", "name": "Curl de Bíceps en Polea (Detrás del Torso)", "musculo": "Bíceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 0, 1, 0], "allow_partials": true, "gif_url": "videos/curl_polea.gif", "straps_required": false, "equipment_alternative": "Curl Inclinado con Mancuerna", "safety_check": "Los codos deben permanecer fijos detrás de la línea de la espalda.", "cue": "Siente el estiramiento completo abajo antes de contraer el bíceps." },
+                  { "id": "D2", "name": "Extensión de Tríceps sobre la Cabeza", "musculo": "Tríceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/triceps_cabeza.gif", "straps_required": false, "equipment_alternative": "Extensión sobre la cabeza con mancuerna", "safety_check": "Asegura el core para no arquear de forma peligrosa la espalda baja al estirar.", "cue": "Brazos pegados a las orejas. Deja que la polea doble tus codos al máximo." }
+              ]},
+              { "block_id": "LONGEVITY_B", "block_type": "ISOMETRIC", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "L1", "name": "Farmer's Hold (Sostén Estático)", "musculo": "Antebrazo y Agarre", "total_sets": 3, "target_rir": 0, "progression_type": "TIME_PROGRESSION", "metric_type": "time_to_failure", "target_time_seconds": 60, "tempo": [0, 0, 0, 0], "allow_partials": false, "gif_url": "videos/farmers_hold.gif", "straps_required": false, "equipment_alternative": "Sostén de discos pesados con pinza", "safety_check": "Si sientes dolor punzante en la articulación de la muñeca, suelta la carga.", "cue": "Postura rígida. Hombros atrás y abajo. Sostén hasta que los dedos se abran solos." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "PIERNA_B_v1.0", "name": "SOEH: Pierna B (Cadena Posterior)", "frequency_type": "Frecuencia 2",
+            "blocks": [
+              { "block_id": "01", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 180, "exercises": [
+                  { "id": "1", "name": "Hip Thrust en Máquina", "musculo": "Glúteo", "total_sets": 4, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/hip_thrust.gif", "straps_required": false, "equipment_alternative": "Hip Thrust en Máquina Smith con Banco Bloqueado", "safety_check": "Mantener la barbilla pegada al pecho en todo el recorrido para evitar sobreextender las lumbares.", "cue": "Sube bloqueando los glúteos de forma explosiva, apretando arriba 1 segundo." }
+              ]},
+              { "block_id": "02", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 180, "exercises": [
+                  { "id": "2", "name": "Prensa de Piernas (Pies altos y separados)", "musculo": "Isquiosurales y Glúteo", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 0, 1, 0], "allow_partials": true, "gif_url": "videos/prensa_alta.gif", "straps_required": false, "equipment_alternative": "Sentadilla Hack (Pies altos en plataforma)", "safety_check": "Clava perfectamente la cadera contra el respaldo; no permitas que la pelvis se enrosque hacia adentro.", "cue": "Clava los talones en la plataforma. Imagina que empujas desde los glúteos e isquios." }
+              ]},
+              { "block_id": "A", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "A1", "name": "Curl de Isquiosurales Sentado", "musculo": "Isquiosurales Aislado", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 0, 1, 1], "allow_partials": true, "gif_url": "videos/curl_sentado.gif", "straps_required": false, "equipment_alternative": "Curl de Isquiosurales Tumbado en Máquina", "safety_check": "Mantén el cuerpo firmemente presionado contra el respaldo de la máquina ajustando el rodillo de muslos.", "cue": "La cadencia excéntrica lenta (3 segundos) es obligatoria en cada repetición." },
+                  { "id": "A2", "name": "Máquina de Aductores", "musculo": "Aductores", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/aductores.gif", "straps_required": false, "equipment_alternative": "Aductores en Polea Baja Unilateral con Tobillera", "safety_check": "Abre las piernas de forma muy controlada para evitar tirones en las inserciones púbicas.", "cue": "Siente el estiramiento profundo 1 segundo antes de cerrar con fuerza." }
+              ]},
+              { "block_id": "03", "block_type": "SEQUENTIAL", "rest_after_set_seconds": 90, "exercises": [
+                  { "id": "3", "name": "Elevación de Talones Sentado en Máquina", "musculo": "Sóleo", "total_sets": 4, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [2, 2, 1, 0], "allow_partials": true, "gif_url": "videos/talones_sentado.gif", "straps_required": false, "equipment_alternative": "Elevación de talones sentado con barra guiada en Smith (Costurero)", "safety_check": "La pausa en estiramiento abajo es el núcleo del ejercicio; no rebotes el peso.", "cue": "La pausa de 2 segundos abajo elimina por completo la elasticidad involuntaria." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "CASA_RESCATE_1_v1.0", "name": "🏠 RESCATE 1 (Torso y Chasis)", "frequency_type": "Emergencia",
+            "blocks": [
+              { "block_id": "RESCATE_A", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "E1", "name": "Lagartija con Pausa", "musculo": "Pecho", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 20 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/lagartija.gif", "straps_required": false, "equipment_alternative": "Colchón / Sofá", "safety_check": "Línea recta estricta desde tobillos a coronilla. Codos a 45 grados.", "cue": "Pausa isométrica muerta de 2s abajo." },
+                  { "id": "E2", "name": "Remo en Suspensión", "musculo": "Espalda Media", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/remo_suspension.gif", "straps_required": true, "equipment_alternative": "Argolla Techo / TRX", "safety_check": "Cero arqueo lumbar compensatorio.", "cue": "Codos rozando los costados. Escápulas retraídas al tope." }
+              ]},
+              { "block_id": "RESCATE_B", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "E3", "name": "Face Pull Argolla", "musculo": "Hombro Posterior", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/face_pull.gif", "straps_required": false, "equipment_alternative": "Argolla Techo", "safety_check": "Cabeza no se adelanta a buscar la cuerda.", "cue": "Tracción al nivel de la frente. Rotación externa máxima." },
+                  { "id": "E4", "name": "Elevaciones Y-W", "musculo": "Hombro Lateral", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/y_w.gif", "straps_required": false, "equipment_alternative": "Mochilas / Bandas", "safety_check": "Movimiento en plano escapular estricto (30°).", "cue": "Dibuja una V al frente y arriba. Descenso resistido." }
+              ]},
+              { "block_id": "RESCATE_C", "block_type": "SEQUENTIAL", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "E5", "name": "Curl Bíceps Suspensión", "musculo": "Bíceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/curl_suspension.gif", "straps_required": false, "equipment_alternative": "Argolla Techo", "safety_check": "El torso no se balancea para ayudar.", "cue": "Codo como bisagra congelada. Puños hacia la frente." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "CASA_RESCATE_2_v1.0", "name": "🏠 RESCATE 2 (Pierna y Lumbar)", "frequency_type": "Emergencia",
+            "blocks": [
+              { "block_id": "RESCATE_01", "block_type": "SEQUENTIAL", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "F1", "name": "Sentadilla Búlgara Asistida", "musculo": "Cuádriceps y Glúteo", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/bulgara.gif", "straps_required": false, "equipment_alternative": "Sofá + Pared", "safety_check": "Mano libre apoyada en pared para anular gasto de equilibrio.", "cue": "Rodilla trasera busca el suelo directo. Empuje vertical." }
+              ]},
+              { "block_id": "RESCATE_02", "block_type": "SEQUENTIAL", "rest_after_exercise_seconds": 90, "exercises": [
+                  { "id": "F2", "name": "Sentadilla 1.5", "musculo": "Cuádriceps", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/sentadilla_15.gif", "straps_required": false, "equipment_alternative": "Mochila Frontal", "safety_check": "Cero inercia elástica. Tensión constante.", "cue": "Fondo, sube a la mitad, baja al fondo, sube completo." }
+              ]},
+              { "block_id": "RESCATE_03", "block_type": "APS", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "F3", "name": "Puente Glúteo B-Stance", "musculo": "Glúteo", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 12, "max": 15 }, "tempo": [3, 1, 1, 0], "allow_partials": true, "gif_url": "videos/puente_gluteo.gif", "straps_required": false, "equipment_alternative": "Colchón", "safety_check": "La zona lumbar no se arquea en la cima.", "cue": "Pie activo soporta el 100% de la tracción. Empuja con el talón." },
+                  { "id": "F4", "name": "Dead Bug", "musculo": "Core", "total_sets": 3, "target_rir": 1, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 15 }, "tempo": [4, 0, 1, 0], "allow_partials": false, "gif_url": "videos/dead_bug.gif", "straps_required": false, "equipment_alternative": "Colchón", "safety_check": "Si la espalda se despega 1 mm del piso, la serie termina.", "cue": "Control milimétrico de extremidades." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "TEST_ALFA_v1.0", "name": "🔬 AUDITORÍA ALFA (BAM 8 Patrones)", "frequency_type": "Trimestral",
+            "blocks": [
+              { "block_id": "ALFA_1", "block_type": "AUDIT", "rest_after_exercise_seconds": 180, "exercises": [
+                  { "id": "B1", "name": "Press Convergente Inclinado (BAM 1)", "musculo": "Pecho Superior", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Máquina de Placas", "safety_check": "Fuerza máxima al límite del RIR 0. Anotar RIR real.", "cue": "Test de Fuerza: Rompe la barrera." },
+                  { "id": "B2", "name": "Remo en Barra T (BAM 2)", "musculo": "Espalda Superior", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": true, "equipment_alternative": "Soporte al pecho", "safety_check": "Cero despegue del pecho.", "cue": "Retracción máxima." },
+                  { "id": "B3", "name": "Jalón al Pecho Abierto (BAM 3)", "musculo": "Dorsal Ancho", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": true, "equipment_alternative": "Polea Alta", "safety_check": "Prohibido balancear.", "cue": "Tira con los codos." },
+                  { "id": "B4", "name": "Remo con Apoyo Agarre Cerrado (BAM 4)", "musculo": "Espalda Media", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": true, "equipment_alternative": "Chest-Supported", "safety_check": "No usar balanceos.", "cue": "Codos al bolsillo trasero." },
+                  { "id": "B5", "name": "Prensa Piernas (BAM 5)", "musculo": "Cuádriceps", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 10, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Inclinada", "safety_check": "Mide tu fuerza máxima (RIR 0).", "cue": "Rompe la barrera." },
+                  { "id": "B6", "name": "Hip Thrust Máquina (BAM 6)", "musculo": "Glúteo", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Smith", "safety_check": "Cero hiperextensión lumbar.", "cue": "Contracción máxima del glúteo arriba." },
+                  { "id": "B7", "name": "Press de Hombro Máquina (BAM 7)", "musculo": "Deltoides Anterior", "total_sets": 3, "target_rir": 0, "progression_type": "DOUBLE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 8, "max": 12 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Vertical", "safety_check": "No arquear espalda baja.", "cue": "Empujar sin bloquear codos." },
+                  { "id": "B8", "name": "Paseo del Granjero Pesado (BAM 8)", "musculo": "Core", "total_sets": 3, "target_rir": 0, "progression_type": "TIME_PROGRESSION", "metric_type": "time_seconds", "target_time_seconds": 60, "tempo": [0, 0, 0, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Pesado sin straps", "safety_check": "Detener si el torso colapsa.", "cue": "Mide segundos bajo carga (45-60s)." }
+              ]}
+            ]
+          },
+          {
+            "routine_id": "TEST_GAMMA_v1.0", "name": "🩺 AUDITORÍA GAMMA (HRR)", "frequency_type": "Mensual",
+            "blocks": [
+              { "block_id": "GAMMA_1", "block_type": "METABOLIC", "rest_after_exercise_seconds": 60, "exercises": [
+                  { "id": "G1", "name": "Validación Mensual HRR", "musculo": "SNC y Vagal", "total_sets": 1, "target_rir": 2, "progression_type": "HEART_RATE_PROGRESSION", "metric_type": "reps", "rep_range": { "min": 1, "max": 1 }, "tempo": [3, 1, 1, 0], "allow_partials": false, "straps_required": false, "equipment_alternative": "Prensa Inclinada + Reloj", "safety_check": "No hables ni te muevas tras la serie.", "cue": "Input 1: Pulso PICO. Input 2: Pulso FINAL (60s después)." }
+              ]}
+            ]
+          }
+        ];
+
+        /* =========================================================================
+           CEREBRO DEL SISTEMA
+           ========================================================================= */
+        function procesarJSON(raw) {
+            let dbFinal = { macro_activo: "Pusheen Fit v3.0 (Clínico)", semanas: 24, rutinas: {} };
+            raw.forEach(rutina => {
+                let ejerciciosAplanados = [];
+                rutina.blocks.forEach(bloque => {
+                    bloque.exercises.forEach(ej => {
+                        ejerciciosAplanados.push({
+                            nombre: ej.name, musculo: ej.musculo || "General", info_bloque: bloque.block_type + " | RIR " + ej.target_rir, tipo: ej.metric_type, 
+                            equipamiento: ej.equipment_alternative, badge: ej.total_sets + " Series", 
+                            tempo: "[" + ej.tempo.join("-") + "]", siseo: ej.cue, prevencion: ej.safety_check,
+                            rest_seconds: bloque.rest_after_exercise_seconds || bloque.rest_after_set_seconds || 90,
+                            max_reps: ej.rep_range ? ej.rep_range.max : null,
+                            min_reps: ej.rep_range ? ej.rep_range.min : null,
+                            es_tiempo: ej.metric_type === 'time_seconds' || ej.metric_type === 'time_to_failure',
+                            es_doble_progresion: ej.progression_type === 'DOUBLE_PROGRESSION',
+                            es_casa: rutina.name.includes("RESCATE"),
+                            allow_partials: ej.allow_partials || false,
+                            gif_url: ej.gif_url || ""
+                        });
+                    });
+                });
+                dbFinal.rutinas[rutina.routine_id] = { titulo: rutina.name, ejercicios: ejerciciosAplanados };
+            });
+            return dbFinal;
+        }
+
+        /* =========================================================================
+           MAPA ANATÓMICO PUSHEEN (SVG + ILUMINACIÓN POR GRUPO MUSCULAR)
+           ========================================================================= */
+        const SVG_PUSHEEN = `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" width="100%" height="100%" role="img" aria-label="Mapa Anatómico de Pusheen">
+            <!-- VISTA ANTERIOR -->
+            <g id="vista-anterior" class="borde-exterior" transform="translate(10, 0)">
+                <path d="M 120 160 C 110 80, 290 80, 280 160 C 290 220, 280 320, 250 340 C 230 350, 170 350, 150 340 C 120 320, 110 220, 120 160 Z" fill="#9f8e81" />
+                <path d="M 140 100 L 160 70 L 185 95 Z" fill="#9f8e81" />
+                <path d="M 260 100 L 240 70 L 215 95 Z" fill="#9f8e81" />
+                <g id="m-pecho">
+                    <path d="M 200 185 C 195 170, 170 170, 155 180 C 150 185, 155 195, 170 200 C 185 200, 200 195, 200 185 Z" fill="#958477" class="division-interna" />
+                    <path d="M 200 185 C 205 170, 230 170, 245 180 C 250 185, 245 195, 230 200 C 215 200, 200 195, 200 185 Z" fill="#958477" class="division-interna" />
+                </g>
+                <g id="m-hombro-frontal">
+                    <path d="M 120 160 C 105 160, 105 185, 125 185 C 135 185, 140 175, 135 165 Z" fill="#a8988b" class="division-interna" />
+                    <path d="M 280 160 C 295 160, 295 185, 275 185 C 265 185, 260 175, 265 165 Z" fill="#a8988b" class="division-interna" />
+                </g>
+                <g id="m-biceps">
+                    <path d="M 125 185 C 112 185, 105 200, 120 205 C 132 205, 138 198, 132 188 Z" fill="#8e7e72" class="division-interna" />
+                    <path d="M 275 185 C 288 185, 295 200, 280 205 C 268 205, 262 198, 268 188 Z" fill="#8e7e72" class="division-interna" />
+                </g>
+                <g id="m-antebrazo-frontal">
+                    <path d="M 120 205 C 108 205, 98 220, 112 225 C 122 225, 128 215, 125 207 Z" fill="#847468" class="division-interna" />
+                    <path d="M 280 205 C 292 205, 302 220, 288 225 C 278 225, 272 215, 275 207 Z" fill="#847468" class="division-interna" />
+                </g>
+                <g id="m-core">
+                    <path d="M 200 215 L 163 222 C 158 245, 163 260, 200 260 Z" fill="#938275" class="division-interna" />
+                    <path d="M 200 215 L 237 222 C 242 245, 237 260, 200 260 Z" fill="#938275" class="division-interna" />
+                    <path d="M 200 260 C 163 260, 158 275, 172 315 C 185 322, 200 320, 200 260 Z" fill="#8a796c" class="division-interna" />
+                    <path d="M 200 260 C 237 260, 242 275, 228 315 C 215 322, 200 320, 200 260 Z" fill="#8a796c" class="division-interna" />
+                    <circle cx="200" cy="275" r="3" fill="#3E2723" stroke="none" />
+                </g>
+                <g id="m-pierna-frontal">
+                    <path d="M 145 330 C 135 340, 135 365, 155 365 C 165 365, 165 345, 160 330 Z" fill="#847468" class="division-interna" />
+                    <path d="M 255 330 C 265 340, 265 365, 245 365 C 235 365, 235 345, 240 330 Z" fill="#847468" class="division-interna" />
+                </g>
+                <g id="rostro-pusheen" fill="#3E2723" stroke="none">
+                    <circle cx="175" cy="130" r="4.5" /><circle cx="225" cy="130" r="4.5" />
+                    <path d="M 194 136 L 200 131 L 206 136 Z" />
+                    <path d="M 193 141 Q 197 146 200 142 Q 203 146 207 141" fill="none" stroke="#3E2723" stroke-width="3" stroke-linecap="round" />
+                    <path d="M 110 135 L 128 133 M 108 143 L 126 140 M 111 151 L 129 147" stroke="#3E2723" stroke-width="4" stroke-linecap="round" />
+                    <path d="M 290 135 L 272 133 M 292 143 L 274 140 M 289 151 L 271 147" stroke="#3E2723" stroke-width="4" stroke-linecap="round" />
+                </g>
+            </g>
+
+            <!-- VISTA POSTERIOR -->
+            <g id="vista-posterior" class="borde-exterior" transform="translate(390, 0)">
+                <path d="M 120 160 C 110 80, 290 80, 280 160 C 290 220, 280 320, 250 340 C 230 350, 170 350, 150 340 C 120 320, 110 220, 120 160 Z" fill="#9f8e81" />
+                <path d="M 140 100 L 160 70 L 185 95 Z" fill="#9f8e81" />
+                <path d="M 260 100 L 240 70 L 215 95 Z" fill="#9f8e81" />
+                <g id="m-espalda">
+                    <path d="M 200 145 C 165 145, 140 152, 135 165 L 265 165 C 260 152, 235 145, 200 145 Z" fill="#a29184" class="division-interna" />
+                    <path d="M 200 165 L 142 165 C 130 185, 130 215, 150 240 L 200 240 Z" fill="#958477" class="division-interna" />
+                    <path d="M 200 165 L 258 165 C 270 185, 270 215, 250 240 L 200 240 Z" fill="#958477" class="division-interna" />
+                    <path d="M 200 145 L 200 240" fill="none" stroke="#3E2723" stroke-width="2.5" opacity="0.5" />
+                    <path d="M 175 155 Q 200 160 225 155" fill="none" stroke-width="6.5" />
+                    <path d="M 170 185 Q 200 190 230 185" fill="none" stroke-width="6.5" />
+                    <path d="M 172 215 Q 200 220 228 215" fill="none" stroke-width="6.5" />
+                </g>
+                <g id="m-hombro-trasero">
+                    <path d="M 125 155 C 115 150, 105 165, 120 175 C 130 175, 135 165, 130 155 Z" fill="#a8988b" class="division-interna" />
+                    <path d="M 275 155 C 285 150, 295 165, 280 175 C 270 175, 265 165, 270 155 Z" fill="#a8988b" class="division-interna" />
+                </g>
+                <g id="m-triceps">
+                    <path d="M 115 175 C 98 172, 95 190, 110 195 C 122 195, 128 185, 120 175 Z" fill="#8e7e72" class="division-interna" />
+                    <path d="M 285 175 C 302 172, 305 190, 290 195 C 278 195, 272 185, 280 175 Z" fill="#8e7e72" class="division-interna" />
+                </g>
+                <g id="m-antebrazo-trasero">
+                    <path d="M 110 195 C 93 192, 90 210, 105 215 C 118 215, 120 205, 115 195 Z" fill="#847468" class="division-interna" />
+                    <path d="M 290 195 C 307 192, 310 210, 295 215 C 282 215, 280 205, 285 195 Z" fill="#847468" class="division-interna" />
+                </g>
+                <g id="m-gluteo">
+                    <path d="M 200 240 L 148 245 C 138 280, 150 315, 200 330 Z" fill="#8a796c" class="division-interna" />
+                    <path d="M 200 240 L 252 245 C 262 280, 250 315, 200 330 Z" fill="#8a796c" class="division-interna" />
+                    <g id="cola-con-marcas">
+                        <path d="M 255 275 C 290 275, 305 290, 310 310 C 295 325, 275 325, 250 300 Z" fill="#9f8e81" />
+                        <path d="M 270 279 L 265 295 M 283 285 L 275 304 M 294 295 L 285 315" stroke="#3E2723" stroke-width="5" stroke-linecap="round" fill="none" />
+                    </g>
+                </g>
+                <g id="m-pierna-trasera">
+                    <path d="M 145 330 C 135 340, 135 365, 155 365 C 165 365, 165 345, 160 330 Z" fill="#847468" class="division-interna" />
+                    <path d="M 255 330 C 265 340, 265 365, 245 365 C 235 365, 235 345, 240 330 Z" fill="#847468" class="division-interna" />
+                </g>
+            </g>
+        </svg>`;
+
+        const PUSHEEN_ANATOMY_MAP = {
+            "Pecho": ["m-pecho"],
+            "Espalda": ["m-espalda"],
+            "Hombro": ["m-hombro-frontal", "m-hombro-trasero"],
+            "Bíceps": ["m-biceps"],
+            "Tríceps": ["m-triceps"],
+            "Agarre": ["m-antebrazo-frontal", "m-antebrazo-trasero"],
+            "Antebrazo": ["m-antebrazo-frontal", "m-antebrazo-trasero"],
+            "Core": ["m-core"],
+            "Pierna": ["m-pierna-frontal", "m-pierna-trasera"],
+            "Glúteo": ["m-gluteo"]
+        };
+
+        // La BD usa nombres granulares ("Pecho Superior", "Dorsal Ancho"...).
+        // Esta tabla los traduce a las claves canónicas del mapa anatómico.
+        const MUSCULO_ALIASES = {
+            "pecho": "Pecho", "pecho superior": "Pecho", "pecho inferior": "Pecho", "pectoral": "Pecho",
+            "espalda": "Espalda", "espalda media": "Espalda", "espalda superior": "Espalda", "dorsal ancho": "Espalda", "dorsales": "Espalda",
+            "hombro": "Hombro", "hombro lateral": "Hombro", "hombro posterior": "Hombro", "deltoides anterior": "Hombro", "deltoides": "Hombro",
+            "biceps": "Bíceps",
+            "triceps": "Tríceps",
+            "agarre": "Agarre", "antebrazo": "Antebrazo",
+            "core": "Core", "abdomen": "Core", "abdominales": "Core",
+            "pierna": "Pierna", "cuadriceps": "Pierna", "cuadriceps aislado": "Pierna",
+            "isquiosurales": "Pierna", "isquiosurales aislado": "Pierna", "isquios": "Pierna",
+            "pantorrillas": "Pierna", "soleo": "Pierna", "aductores": "Pierna",
+            "gluteo": "Glúteo", "gluteos": "Glúteo"
+        };
+
+        function claveMusculo(texto) {
+            return String(texto || "").normalize("NFD").replace(/[̀-ͯ]/g, "").trim().toLowerCase();
+        }
+
+        function normalizarMusculo(musculoDB) {
+            const texto = String(musculoDB || "").trim();
+            if (!texto) return [];
+            const claves = [];
+            texto.split(/\s+y\s+/i).forEach(parte => {
+                const clave = claveMusculo(parte);
+                if (!clave) return;
+                let canonica = MUSCULO_ALIASES[clave] || null;
+                if (!canonica) {
+                    const alias = Object.keys(MUSCULO_ALIASES).find(k => clave.includes(k));
+                    if (alias) canonica = MUSCULO_ALIASES[alias];
+                }
+                if (!canonica && PUSHEEN_ANATOMY_MAP[parte]) canonica = parte;
+                if (canonica && !claves.includes(canonica)) claves.push(canonica);
+            });
+            return claves;
+        }
+
+        function iluminarMusculo(musculoDB) {
+            document.querySelectorAll('g[id^="m-"]').forEach(el => el.classList.remove("glow"));
+            const ids = new Set();
+            normalizarMusculo(musculoDB).forEach(clave => {
+                (PUSHEEN_ANATOMY_MAP[clave] || []).forEach(id => ids.add(id));
+            });
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add("glow");
+            });
+            return Array.from(ids);
+        }
+
+        let estado = { 
+            vista: 'entrenar', perfil: 'julio', rutina: 'TORSO_A_v1.0', triage: 'ALFA', domsPenalty: false, indices: {}, 
+            descanso: { fin: 0, intervalo: null }, 
+            cardio: { fatmaxSecs: 0, fatmaxInterval: null, noruegoSecs: 600, noruegoInterval: null, faseNoruego: 'calentamiento' },
+            db: procesarJSON(RAW_JSON), metronomoPausadoPorDescanso: false 
+        };
+
+        /* --- POKA-YOKE: WAKELOCK --- */
+        let wakeLock = null;
+        async function mantenerPantallaActiva() {
+            if ('wakeLock' in navigator) {
+                try {
+                    if (wakeLock !== null) return;
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    wakeLock.addEventListener('release', () => { wakeLock = null; });
+                } catch (err) {}
+            }
+        }
+        document.body.addEventListener('click', mantenerPantallaActiva);
+        document.addEventListener('visibilitychange', async () => { if (document.visibilityState === 'visible') mantenerPantallaActiva(); });
+
+        /* --- TRIAGE PRE-VUELO OBJETIVO --- */
+        function evaluarSueno() {
+            let horas = parseFloat(document.getElementById('input-sueno').value);
+            if(isNaN(horas)) { mostrarToast("⚠️ Ingresa un número válido (ej: 6.5)"); return; }
+            if(horas >= 6.5) ejecutarTriage('ALFA');
+            else if(horas >= 5.0) ejecutarTriage('BETA');
+            else ejecutarTriage('GAMMA');
+        }
+
+        function ejecutarTriage(nivel) {
+            document.getElementById('modal-triage').style.display = 'none';
+            estado.triage = nivel;
+
+            let lastWorkout = localStorage.getItem(`last_workout_date_${estado.perfil}`);
+            if(lastWorkout) {
+                let days = (new Date() - new Date(lastWorkout)) / (1000 * 60 * 60 * 24);
+                if(days > 10) {
+                    estado.domsPenalty = true;
+                    mostrarToast("⚠️ DOMS Poka-Yoke: Más de 10 días inactivo. Pesos -20%.", true);
+                }
+            }
+
+            if (nivel === 'ALFA') {
+                mostrarToast("🟢 SUEÑO ÓPTIMO. ALFA: Sobrecarga y Parciales autorizados.");
+            } else if (nivel === 'BETA') {
+                mostrarToast("🟡 FATIGA CENTRAL (BETA). Cero parciales.", true);
+            } else if (nivel === 'GAMMA') {
+                estado.rutina = 'CASA_RESCATE_1_v1.0'; 
+                mostrarToast("🔴 SUEÑO CRÍTICO (GAMMA). Bloqueo de cargas pesadas. Rutina de rescate cargada.");
+            }
+            renderEntrenar();
+        }
+
+        /* --- NAVEGACIÓN Y EXTRAS --- */
+        let startX = 0;
+        document.addEventListener('touchstart', e => { startX = e.changedTouches[0].screenX; }, {passive: true});
+        document.addEventListener('touchend', e => {
+            let endX = e.changedTouches[0].screenX;
+            if (estado.vista === 'entrenar' && document.getElementById('modal-video').style.display === 'none') {
+                if (startX - endX > 50) cambiarEjercicio(1); 
+                else if (endX - startX > 50) cambiarEjercicio(-1); 
+            }
+        }, {passive: true});
+
+        let audioCtx = null; let metronomoActivo = false; let loopMetronomo = null;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' }); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+        function dispararClick(frecuencia, duracion) {
+            initAudio(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.type = 'square'; osc.frequency.setValueAtTime(frecuencia, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.08, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duracion);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + duracion);
+        }
+        function controlMetronomo() {
+            let btn = document.getElementById('btnMetro');
+            if(metronomoActivo) { clearInterval(loopMetronomo); metronomoActivo = false; btn.classList.remove('active'); estado.metronomoPausadoPorDescanso = false; } 
+            else { initAudio(); loopMetronomo = setInterval(() => dispararClick(880, 0.05), 1000); metronomoActivo = true; btn.classList.add('active'); }
+        }
+
+        function mostrarToast(msg, esDorado = false) {
+            let t = document.getElementById('toast-message'); t.innerHTML = msg; t.className = esDorado ? "toast-oro" : "";
+            t.style.display = 'block'; t.style.opacity = '1';
+            if(window.toastTimeout) clearTimeout(window.toastTimeout);
+            window.toastTimeout = setTimeout(() => { t.style.opacity = '0'; setTimeout(()=>t.style.display='none',300); }, 4000);
+        }
+
+        function mostrarVideo(url) {
+            if(!url) return mostrarToast("⚠️ GIF no configurado. Agrégalo a 'videos/'.");
+            document.getElementById('video-player').src = url;
+            document.getElementById('modal-video').style.display = 'flex';
+        }
+
+        function cambiarVista(v) {
+            estado.vista = v;
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`nav-${v}`).classList.add('active');
+            if(v === 'entrenar') renderEntrenar(); 
+            else if(v === 'cardio') renderCardio(); 
+            else if(v === 'planeacion') renderPlaneacion(); 
+            else if(v === 'metricas') renderMetricas();
+        }
+
+        function cambiarPerfil(p) { estado.perfil = p; document.body.setAttribute('data-theme', p); document.getElementById('prof-julio').classList.toggle('active', p==='julio'); document.getElementById('prof-kenia').classList.toggle('active', p==='kenia'); cambiarVista('entrenar'); }
+
+        function calcularTotalHoy() {
+            let t = 0; let hoy = new Date().toISOString().slice(0,10);
+            for (let r in estado.db.rutinas) { 
+                estado.db.rutinas[r].ejercicios.forEach(ej => { 
+                    if(ej.tipo !== "time_seconds" && ej.tipo !== "time_to_failure" && !ej.es_casa && !ej.nombre.includes("HRR")) { 
+                        let logs = JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${ej.nombre.replace(/[^a-zA-Z0-9]/g, '')}`)) || []; 
+                        logs.filter(l => l.fecha === hoy && !l.is_aprox).forEach(l => { t += (l.val1 * l.val2); }); 
+                    } 
+                }); 
+            }
+            return t;
+        }
+
+        function verificarResetMatutino(hash) {
+            let ultimaFechaCaptura = localStorage.getItem(`date_${estado.perfil}_${hash}`);
+            let hoy = new Date();
+            let fechaHoyStr = hoy.toISOString().slice(0,10);
+            
+            if (ultimaFechaCaptura && ultimaFechaCaptura !== fechaHoyStr) {
+                let limiteReset = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate(), 6, 0, 0);
+                if (hoy >= limiteReset) {
+                    let actualV1 = localStorage.getItem(`t_${estado.perfil}_1_${hash}`);
+                    let actualV2 = localStorage.getItem(`t_${estado.perfil}_2_${hash}`);
+                    if (actualV1 && actualV1 !== "0") localStorage.setItem(`ghost_${estado.perfil}_1_${hash}`, actualV1);
+                    if (actualV2 && actualV2 !== "0") localStorage.setItem(`ghost_${estado.perfil}_2_${hash}`, actualV2);
+                    
+                    localStorage.setItem(`t_${estado.perfil}_1_${hash}`, "0");
+                    localStorage.setItem(`t_${estado.perfil}_2_${hash}`, "0");
+                    localStorage.setItem(`date_${estado.perfil}_${hash}`, fechaHoyStr);
+                }
+            } else if (!ultimaFechaCaptura) {
+                localStorage.setItem(`date_${estado.perfil}_${hash}`, fechaHoyStr);
+            }
+        }
+
+        /* --- RENDER PRINCIPAL DE ENTRENAMIENTO --- */
+        function renderEntrenar() {
+            let canvas = document.getElementById('app-canvas');
+            if(estado.indices[estado.rutina] === undefined) estado.indices[estado.rutina] = 0;
+            
+            let bloqueOriginal = estado.db.rutinas[estado.rutina];
+            let bloque = JSON.parse(JSON.stringify(bloqueOriginal));
+            const idx = estado.indices[estado.rutina]; const ej = bloque.ejercicios[idx];
+            const hash = ej.nombre.replace(/[^a-zA-Z0-9]/g, '');
+
+            verificarResetMatutino(hash);
+
+            let l1 = "Peso (kg)"; 
+            let l2 = ej.es_tiempo ? "Segundos" : "Reps"; 
+            if (ej.es_casa) { l1 = "Pausa (s)"; l2 = "Reps"; }
+            if (ej.nombre.includes("HRR") || ej.nombre.includes("GAMMA")) { l1 = "Pulso PICO"; l2 = "Pulso 60s"; }
+
+            let v1 = localStorage.getItem(`t_${estado.perfil}_1_${hash}`) || (ej.es_casa ? "2" : "0"); 
+            let v2 = localStorage.getItem(`t_${estado.perfil}_2_${hash}`) || "0";
+            
+            // LÓGICA DE PROGRESIÓN ADAPTATIVA
+            let htmlProgresion = "";
+            if (v1 === "0" && v2 === "0" && !ej.es_tiempo && !ej.es_casa && !ej.nombre.includes("HRR")) {
+                let ghostV1 = localStorage.getItem(`ghost_${estado.perfil}_1_${hash}`);
+                let ghostV2 = localStorage.getItem(`ghost_${estado.perfil}_2_${hash}`);
+                if(ghostV1 && ghostV2) {
+                    let lastReps = parseInt(ghostV2);
+                    let lastWeight = parseFloat(ghostV1);
+                    if (ej.max_reps && lastReps >= ej.max_reps) {
+                        v1 = (lastWeight + 2.5).toString();
+                        v2 = ej.min_reps.toString();
+                        htmlProgresion = `<div style="font-size:0.7rem; color:#22c55e; font-weight:900; text-align:center; margin-bottom:8px;">📈 ¡Rango superado! Sugerencia: ${v1}kg x ${v2} reps.</div>`;
+                    } else if (ej.max_reps && lastReps < ej.max_reps) {
+                        v1 = lastWeight.toString();
+                        v2 = (lastReps + 1).toString();
+                        htmlProgresion = `<div style="font-size:0.7rem; color:var(--oro); font-weight:900; text-align:center; margin-bottom:8px;">🎯 Objetivo de hoy: Lograr 1 repetición más (${v1}kg x ${v2} reps).</div>`;
+                    }
+                }
+            }
+
+            if (estado.domsPenalty && v1 !== "0" && !ej.es_casa && !ej.nombre.includes("HRR")) {
+                v1 = (parseFloat(v1) * 0.8).toFixed(1); 
+                htmlProgresion += `<div style="font-size:0.7rem; color:#ef4444; font-weight:900; text-align:center; margin-bottom:8px;">📉 Carga reducida al 80% (DOMS).</div>`;
+            }
+
+            let hoy = new Date().toISOString().slice(0,10); 
+            let logsHoy = (JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${hash}`)) || []).filter(l => l.fecha === hoy);
+            let totalHoy = calcularTotalHoy();
+            
+            let ghostV1 = localStorage.getItem(`ghost_${estado.perfil}_1_${hash}`);
+            let ghostV2 = localStorage.getItem(`ghost_${estado.perfil}_2_${hash}`);
+            let htmlPistaGhost = "";
+            if (v1 === "0" && ghostV1 && ghostV2) {
+                htmlPistaGhost = `<div style="font-size:0.7rem; color:var(--oro); font-weight:800; text-align:center; margin-bottom:8px; opacity:0.8;">↩️ Referencia pasada: ${ghostV1} ${ej.es_casa ? "s" : (ej.nombre.includes("HRR") ? "lpm" : "kg")} x ${ghostV2}</div>`;
+            }
+
+            let historialGlobal = JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${hash}`)) || [];
+            let unidadL1 = ej.nombre.includes("HRR") ? "lpm" : (ej.es_casa ? "s" : "kg");
+            let ultimosLogs = historialGlobal.slice(-3).reverse().map(l => {
+                let style = l.is_aprox ? "aprox" : "";
+                let partial = l.val3 ? ` +${l.val3}P` : "";
+                return `<span class="history-item ${style}">${l.val1} ${unidadL1} x ${l.val2}${partial}</span>`;
+            }).join('');
+            let htmlHistorial = ultimosLogs ? `<div class="history-box">HISTORIAL RECIENTE:<br>${ultimosLogs}</div>` : '';
+
+            let htmlBarraProgreso = "";
+            let seriesSugeridasMax = parseInt(ej.badge.split(' ')[0]) || 3;
+            if(ej.es_tiempo || ej.nombre.includes("HRR")) seriesSugeridasMax = 1;
+            
+            let efectivasCount = logsHoy.filter(l => !l.is_aprox).length;
+            for (let i = 1; i <= seriesSugeridasMax; i++) {
+                let claseSegmento = i <= efectivasCount ? "filled" : "";
+                htmlBarraProgreso += `<div class="sets-bar-segment ${claseSegmento}" style="background:${claseSegmento ? 'var(--accent)' : 'var(--bg-control)'}; margin-right:4px; height:6px; flex:1;"></div>`;
+            }
+
+            let htmlParciales = "";
+            if (ej.allow_partials && estado.triage === 'ALFA') {
+                htmlParciales = `
+                    <div class="cell-input" style="padding:6px 10px; border-color:var(--oro); background:var(--oro-fondo);">
+                        <div class="cell-title" style="margin-bottom:4px; font-size:0.6rem; color:var(--oro);">+ Parciales</div>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" id="val3-${hash}" style="font-size:1.5rem; color:var(--oro);" placeholder="0">
+                    </div>
+                `;
+            }
+
+            canvas.innerHTML = `
+                <div class="card-exercise" style="padding:10px; margin-bottom:12px; text-align:center;">
+                    <div style="font-size:0.6rem; color:var(--texto-sec); font-weight:900; text-transform:uppercase; letter-spacing:0.5px;">Tonelaje Efectivo (Hoy)</div>
+                    <div style="font-size:1.6rem; font-weight:900; color:var(--accent);">${totalHoy.toLocaleString()} kg</div>
+                </div>
+                <div class="routine-selector" style="font-size:1rem; border-color:var(--oro); color:var(--oro);">${bloque.titulo}</div>
+                <div class="card-exercise" style="margin-bottom:12px; min-height:360px; display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <div class="sets-bar-bg" style="margin-bottom:12px; height:6px; background:transparent; display:flex; width:100%;">${htmlBarraProgreso}</div>
+                        <div class="card-header" style="margin-bottom:8px;">
+                            <div class="card-title" style="font-size:1.15rem; line-height:1.2;">${ej.nombre}</div>
+                            <div class="badge-musculo" style="white-space:nowrap;">${ej.musculo}</div>
+                        </div>
+                        <div class="clinical-box" style="margin-bottom:12px; padding:8px 10px; font-size:0.72rem;">
+                            ${ej.equipamiento ? `<p style="margin-bottom:2px;"><strong>⚙️ Equipo:</strong> <span class="badge-alerta">${ej.equipamiento}</span> ${ej.badge ? `| 🎯 <strong>Rango:</strong> ${ej.badge}` : ''}</p>` : ''}
+                            ${ej.tempo ? `<p style="margin-bottom:2px;"><strong>⏱️ Tempo:</strong> <span style="font-family:monospace; font-weight:bold; color:var(--oro);">${ej.tempo}</span></p>` : ''}
+                            ${ej.siseo ? `<p style="margin-bottom:4px;"><strong>🫁 Foco:</strong> ${ej.siseo}</p>` : ''}
+                            <hr style="border:0; border-top:1px solid var(--borde); margin:4px 0;">
+                            ${ej.prevencion ? `<p style="font-size:0.68rem; color:var(--texto-sec);"><span class="badge-alerta" style="color:#ef4444; font-weight:900;">⚠️ Evitar:</span> ${ej.prevencion}</p>` : ''}
+                        </div>
+                        <button class="btn-tecnica" onclick="mostrarVideo('${ej.gif_url}')">👁️ VER TÉCNICA (GIF)</button>
+                    </div>
+                    <div style="margin-top:8px;">
+                        <div class="sets-header" style="margin-bottom:6px; font-size:0.65rem;"><span>Registros Hoy (Efectivas): ${efectivasCount} / ${ej.badge.split(' ')[0]}</span></div>
+                        ${htmlProgresion}
+                        ${htmlPistaGhost}
+                        ${htmlHistorial}
+                        <div class="grid-inputs" style="grid-template-columns: ${htmlParciales ? '1fr 1fr 0.8fr' : '1fr 1fr'}; gap:6px; margin-bottom:12px;">
+                            <div class="cell-input" style="padding:6px 10px;">
+                                <div class="cell-title" style="margin-bottom:4px; font-size:0.6rem;">${l1}</div>
+                                <div class="flex-controls">
+                                    <button class="btn-step" style="width:30px; height:30px; border-radius:6px; font-size:1.2rem;" onclick="modificarVal('val1-${hash}', -2.5)">-</button>
+                                    <input type="number" inputmode="decimal" pattern="[0-9]*" id="val1-${hash}" style="font-size:1.4rem;" value="${v1}">
+                                    <button class="btn-step" style="width:30px; height:30px; border-radius:6px; font-size:1.2rem;" onclick="modificarVal('val1-${hash}', 2.5)">+</button>
+                                </div>
+                            </div>
+                            <div class="cell-input" style="padding:6px 10px;">
+                                <div class="cell-title" style="margin-bottom:4px; font-size:0.6rem;">${l2}</div>
+                                <div class="flex-controls">
+                                    <button class="btn-step" style="width:30px; height:30px; border-radius:6px; font-size:1.2rem;" onclick="modificarVal('val2-${hash}', -1)">-</button>
+                                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="val2-${hash}" style="font-size:1.4rem;" value="${v2}">
+                                    <button class="btn-step" style="width:30px; height:30px; border-radius:6px; font-size:1.2rem;" onclick="modificarVal('val2-${hash}', 1)">+</button>
+                                </div>
+                            </div>
+                            ${htmlParciales}
+                        </div>
+                        <div class="action-row" style="display:block; width:100%;">
+                            <button class="btn-record" style="height:48px; line-height:48px; border-radius:12px; font-size:1rem;" onclick="registrarSerie('${ej.nombre}', false, ${ej.rest_seconds})">✓ TERMINAR SERIE EFECTIVA</button>
+                            ${!ej.nombre.includes("HRR") ? `<button class="btn-aprox" onclick="registrarSerie('${ej.nombre}', true, 45)">⚖️ APROXIMACIÓN (NO SUMA)</button>` : ''}
+                            <button class="btn-undo" onclick="deshacerSerie('${ej.nombre}')">↩️ DESHACER ÚLTIMA</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="focus-nav-bar" style="margin-top:8px; padding:6px;">
+                    <button class="btn-focus-nav" onclick="cambiarEjercicio(-1)" ${idx===0?'disabled':''}>◀ ANT</button>
+                    <div class="focus-indicator" style="font-size:0.8rem; font-weight:900;">${idx+1} / ${bloque.ejercicios.length}</div>
+                    <button class="btn-focus-nav" onclick="cambiarEjercicio(1)" ${idx===bloque.ejercicios.length-1?'disabled':''}>SIG ▶</button>
+                </div>
+                <button class="btn-finish-workout" onclick="terminarEntrenamiento()">🏆 TERMINAR SESIÓN DE HOY</button>
+            `;
+            setTimeout(() => { let inputPeso = document.getElementById(`val1-${hash}`); if (inputPeso && document.activeElement !== inputPeso) { inputPeso.scrollIntoView({ block: 'center' }); } }, 150);
+        }
+
+        function registrarSerie(nombre, isAprox, restSeconds) {
+            let h = nombre.replace(/[^a-zA-Z0-9]/g, ''); 
+            let v1 = parseFloat(document.getElementById(`val1-${h}`).value)||0; 
+            let v2 = parseInt(document.getElementById(`val2-${h}`).value)||0;
+            let el3 = document.getElementById(`val3-${h}`);
+            let v3 = el3 ? parseInt(el3.value)||0 : 0;
+            
+            let logs = JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${h}`)) || []; 
+            logs.push({fecha: new Date().toISOString().slice(0,10), val1: v1, val2: v2, val3: v3, is_aprox: isAprox}); 
+            localStorage.setItem(`logs_${estado.perfil}_${h}`, JSON.stringify(logs));
+            
+            if (!isAprox) {
+                localStorage.setItem(`t_${estado.perfil}_1_${h}`, v1); 
+                localStorage.setItem(`t_${estado.perfil}_2_${h}`, v2);
+                localStorage.setItem(`date_${estado.perfil}_${h}`, new Date().toISOString().slice(0,10));
+                localStorage.setItem(`last_workout_date_${estado.perfil}`, new Date().toISOString().slice(0,10));
+                
+                if (nombre.includes("HRR") || nombre.includes("GAMMA")) {
+                    let caida = v1 - v2;
+                    mostrarToast(`🩺 Caída de pulso: ${caida} lpm.<br> ${caida > 25 ? 'Óptima recuperación vagal.' : 'Recuperación baja, alerta SNC.'}`, true);
+                } else {
+                    mostrarToast(`✓ Efectiva Guardada: ${v1} x ${v2} ${v3?'+'+v3+'P':''}`);
+                }
+            } else {
+                mostrarToast(`⚖️ Calentamiento Guardado. No suma al tonelaje.`);
+            }
+            // Persistir el músculo trabajado para iluminarlo en la vista Clínico (por perfil)
+            let rutinaActual = estado.db.rutinas[estado.rutina];
+            let ejActual = rutinaActual ? rutinaActual.ejercicios[estado.indices[estado.rutina]] : null;
+            if (ejActual) {
+                localStorage.setItem(`ultimo_musculo_${estado.perfil}`, ejActual.musculo || "General");
+                iluminarMusculo(ejActual.musculo);
+            }
+
+            iniciarDescansoGlobal(restSeconds || 90);
+            renderEntrenar();
+        }
+
+        function modificarVal(id, s) { let e = document.getElementById(id); e.value = Math.max(0, (parseFloat(e.value)||0) + s); }
+        function cambiarEjercicio(dir) { let r = estado.db.rutinas[estado.rutina]; let n = estado.indices[estado.rutina] + dir; if(n>=0 && n<r.ejercicios.length) { estado.indices[estado.rutina] = n; renderEntrenar(); } }
+        function deshacerSerie(n) { let h = n.replace(/[^a-zA-Z0-9]/g, ''); let hoy = new Date().toISOString().slice(0,10); let logs = JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${h}`)) || []; if (logs.length>0 && logs[logs.length-1].fecha===hoy) { logs.pop(); localStorage.setItem(`logs_${estado.perfil}_${h}`, JSON.stringify(logs)); mostrarToast("↩️ Serie borrada."); renderEntrenar(); } }
+
+        function terminarEntrenamiento() {
+            mostrarToast(`🏆 ¡SESIÓN CERRADA!<br>Ejecutando respaldo en la nube...`, true);
+            sincronizarNubeSilenciosa(); // Webhook
+            setTimeout(() => cambiarVista('planeacion'), 2500);
+        }
+
+        function iniciarDescansoGlobal(s) {
+            estado.descanso.fin = Date.now() + (s * 1000); 
+            document.getElementById('global-rest-timer').style.display = 'block';
+            if(estado.descanso.intervalo) clearInterval(estado.descanso.intervalo);
+            estado.descanso.intervalo = setInterval(() => { 
+                let r = Math.ceil((estado.descanso.fin - Date.now()) / 1000); 
+                if(r <= 0) { cancelarDescanso(); mostrarToast("⏰ RECUPERACIÓN TERMINADA.", true); dispararClick(440, 0.4); return; } 
+                document.getElementById('rest-time-display').textContent = `${Math.floor(r/60).toString().padStart(2,'0')}:${(r%60).toString().padStart(2,'0')}`; 
+                document.getElementById('rest-progress-fill').style.width = `${(r/s)*100}%`; 
+            }, 250); 
+        }
+
+        function ajustarDescanso(s) { estado.descanso.fin += (s*1000); } 
+        function cancelarDescanso() { clearInterval(estado.descanso.intervalo); document.getElementById('global-rest-timer').style.display = 'none'; }
+
+        /* =========================================================================
+           CARDIO (FATMAX & NORUEGO)
+           ========================================================================= */
+        const FASES_NOR = { calentamiento:{t:600, sig:"e1", txt:"CALENTAMIENTO (Z1)", c:"#a1a1aa"}, e1:{t:240, sig:"r1", txt:"ESFUERZO 1 (90% VO2Max)", c:"#ef4444"}, r1:{t:180, sig:"e2", txt:"RECUP. 1 (65%)", c:"#22c55e"}, e2:{t:240, sig:"r2", txt:"ESFUERZO 2 (90% VO2Max)", c:"#ef4444"}, r2:{t:180, sig:"e3", txt:"RECUP. 2 (65%)", c:"#22c55e"}, e3:{t:240, sig:"r3", txt:"ESFUERZO 3 (90% VO2Max)", c:"#ef4444"}, r3:{t:180, sig:"e4", txt:"RECUP. 4 (65%)", c:"#22c55e"}, e4:{t:240, sig:"enf", txt:"ESFUERZO FINAL (90% VO2Max)", c:"#ef4444"}, enf:{t:180, sig:"fin", txt:"ENFRIAMIENTO", c:"#38bdf8"} };
+        
+        function renderCardio() {
+            let canvas = document.getElementById('app-canvas');
+            let fn = FASES_NOR[estado.cardio.faseNoruego]; let s = estado.cardio.noruegoSecs; 
+            
+            // Calculo histórico
+            let mF = 0; let sN = 0;
+            for(let i=0; i<localStorage.length; i++) {
+                let k = localStorage.key(i);
+                if(k.startsWith(`fatmax_semanal_${estado.perfil}`)) mF += parseInt(localStorage.getItem(k)||0);
+            }
+            mF = Math.floor(mF/60); // Total minutos
+
+            canvas.innerHTML = `
+                <div class="card-exercise" style="border-color:var(--azul-clinico); box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);">
+                    <div class="card-title" style="text-align:center; margin-bottom:8px;">🫁 ZONA 2 (FatMax)</div>
+                    <p style="font-size:0.75rem; color:var(--texto-sec); text-align:center; font-weight:800; font-style:italic;">Eficiencia mitocondrial. Construyendo la base para el futuro.</p>
+                    <div id="fatmax-display" style="text-align:center; font-size:3.2rem; font-weight:900; color:var(--texto-prio); margin:12px 0; font-family:monospace;">00:00:00</div>
+                    <div style="font-size:0.85rem; font-weight:900; text-align:center; color:var(--accent); margin-bottom:12px;">Histórico Total: ${mF} Minutos</div>
+                    <button class="btn-record" id="btn-fatmax" style="margin: 0 auto 12px auto; background:#38bdf8;" onclick="toggleFatmax()">▶ INICIAR FATMAX</button>
+                    <button class="btn-undo" onclick="guardarSesionFatmax()">📥 GUARDAR MINUTOS A LA NUBE</button>
+                </div>
+
+                <div class="card-exercise" style="border-color:#ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.15);">
+                    <div class="card-title" style="text-align:center; margin-bottom:8px; color:#ef4444;">🇳🇴 PROTOCOLO 4x4 (VO2MAX)</div>
+                    <p style="font-size:0.75rem; color:var(--texto-sec); text-align:center; font-weight:800; font-style:italic;">"Estás comprando tiempo. Este sufrimiento es el precio para correr junto a Merly en 2040."</p>
+                    <div style="font-size:0.8rem; font-weight:900; text-align:center; color:var(--texto-prio); margin-top:8px;" id="nor-txt">${fn.txt}</div>
+                    <div id="nor-display" style="text-align:center; font-size:3.5rem; font-weight:900; color:${fn.c}; margin:8px 0; font-family:monospace;">${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}</div>
+                    <div class="sets-bar-bg" style="margin-bottom:16px; height:6px;"><div class="sets-bar-segment filled" id="nor-bar" style="background:${fn.c}; width:${((fn.t-s)/fn.t)*100}%;"></div></div>
+                    <button class="btn-record" id="btn-nor" style="background:#ef4444; height:60px; font-size:1.1rem;" onclick="toggleNoruego()">🩸 COMPRAR TIEMPO (EJECUTAR 4x4)</button>
+                    <button class="btn-undo" onclick="resetNoruego()">🔄 RESETEAR RELOJ</button>
+                </div>
+            `; updateFatmaxUI(); updateNoruegoUI();
+        }
+        function toggleFatmax() { if(estado.cardio.fatmaxInterval) { clearInterval(estado.cardio.fatmaxInterval); estado.cardio.fatmaxInterval=null; } else { estado.cardio.fatmaxInterval = setInterval(()=>{estado.cardio.fatmaxSecs++; if(estado.vista==='cardio') updateFatmaxUI();},1000); } if(estado.vista==='cardio') updateFatmaxUI(); }
+        function updateFatmaxUI() { let d=document.getElementById('fatmax-display'), b=document.getElementById('btn-fatmax'); if(!d) return; let s=estado.cardio.fatmaxSecs; d.textContent=`${Math.floor(s/3600).toString().padStart(2,'0')}:${Math.floor((s%3600)/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; if(estado.cardio.fatmaxInterval){b.textContent="🛑 PAUSAR FATMAX"; b.style.background="#b91c1c";}else{b.textContent="▶ INICIAR FATMAX"; b.style.background="#38bdf8";} }
+        function guardarSesionFatmax() { 
+            if(estado.cardio.fatmaxSecs < 60) return mostrarToast("⚠️ Mínimo 1 min."); 
+            let hoy = new Date().toISOString().slice(0,10);
+            localStorage.setItem(`fatmax_semanal_${estado.perfil}_${hoy}`, (parseInt(localStorage.getItem(`fatmax_semanal_${estado.perfil}_${hoy}`))||0)+estado.cardio.fatmaxSecs); 
+            estado.cardio.fatmaxSecs = 0; 
+            if(estado.cardio.fatmaxInterval) toggleFatmax(); 
+            mostrarToast("📥 Minutos agregados. Sincronizando nube..."); 
+            sincronizarNubeSilenciosa();
+            renderCardio(); 
+        }
+        function toggleNoruego() { if(estado.cardio.noruegoInterval) { clearInterval(estado.cardio.noruegoInterval); estado.cardio.noruegoInterval=null; } else { estado.cardio.noruegoInterval = setInterval(procesarFaseNor,1000); } if(estado.vista==='cardio') updateNoruegoUI(); }
+        function procesarFaseNor() { 
+            estado.cardio.noruegoSecs--; let fn=FASES_NOR[estado.cardio.faseNoruego]; 
+            if(estado.cardio.noruegoSecs>0 && estado.cardio.noruegoSecs<=3) dispararClick(900,0.1); 
+            if(estado.cardio.noruegoSecs<=0){ 
+                let sig=fn.sig; 
+                if(sig==="fin"){ 
+                    clearInterval(estado.cardio.noruegoInterval); estado.cardio.noruegoInterval=null; dispararClick(1200,0.8); 
+                    mostrarToast("🏆 ¡TIEMPO COMPRADO! Tu corazón es más fuerte hoy.", true); 
+                    resetNoruego(); return; 
+                } 
+                estado.cardio.faseNoruego=sig; estado.cardio.noruegoSecs=FASES_NOR[sig].t; dispararClick(1500,0.5); 
+            } 
+            if(estado.vista==='cardio') updateNoruegoUI(); 
+        }
+        function updateNoruegoUI() { let d=document.getElementById('nor-display'), b=document.getElementById('btn-nor'), l=document.getElementById('nor-txt'), bar=document.getElementById('nor-bar'); if(!d) return; let s=estado.cardio.noruegoSecs, fn=FASES_NOR[estado.cardio.faseNoruego]; d.textContent=`${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; d.style.color=fn.c; l.textContent=fn.txt; bar.style.background=fn.c; bar.style.width=`${((fn.t-s)/fn.t)*100}%`; if(estado.cardio.noruegoInterval){b.textContent="🛑 PAUSAR SUFRIMIENTO"; b.style.background="var(--bg-control)"; b.style.color="var(--texto-prio)";}else{b.textContent="🩸 COMPRAR TIEMPO (EJECUTAR 4x4)"; b.style.background="#ef4444"; b.style.color="#fff";} }
+        function resetNoruego() { clearInterval(estado.cardio.noruegoInterval); estado.cardio.noruegoInterval=null; estado.cardio.faseNoruego='calentamiento'; estado.cardio.noruegoSecs=FASES_NOR['calentamiento'].t; if(estado.vista==='cardio') renderCardio(); }
+
+        /* =========================================================================
+           COMANDO TÁCTICO (FLEXIBILIDAD DE PLANEACIÓN)
+           ========================================================================= */
+        function despacharRutina(id) {
+            estado.rutina = id;
+            estado.indices[id] = 0;
+            mostrarToast(`🚀 Despachando: ${estado.db.rutinas[id].titulo}`, true);
+            cambiarVista('entrenar');
+        }
+
+        function renderPlaneacion() {
+            let canvas = document.getElementById('app-canvas');
+
+            canvas.innerHTML = `
+                <div class="card-exercise" style="border-color:var(--oro); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1);">
+                    <h3 style="text-align:center; font-size:1.1rem; margin-bottom:4px; color:var(--oro);">📡 COMANDO DE DESPACHO</h3>
+                    <p style="font-size:0.75rem; color:var(--texto-sec); text-align:center; font-weight:800; font-style:italic; margin-bottom:16px;">Elige la operación a ejecutar según tu contingencia de hoy.</p>
+                    
+                    <button class="dispatch-btn" onclick="despacharRutina('TORSO_A_v1.0')"><span>🏋️ Torso A (Amplitud)</span> <span>▶</span></button>
+                    <button class="dispatch-btn" onclick="despacharRutina('PIERNA_A_v1.0')"><span>🦵 Pierna A (Cuádriceps)</span> <span>▶</span></button>
+                    <button class="dispatch-btn" onclick="despacharRutina('TORSO_B_v1.0')"><span>🏋️ Torso B (Densidad)</span> <span>▶</span></button>
+                    <button class="dispatch-btn" onclick="despacharRutina('PIERNA_B_v1.0')"><span>🦵 Pierna B (Posterior)</span> <span>▶</span></button>
+                    
+                    <hr style="border:0; border-top:1px dashed var(--borde); margin:16px 0;">
+                    
+                    <button class="dispatch-btn rescate" onclick="despacharRutina('CASA_RESCATE_1_v1.0')"><span>🏠 Rescate Casa 1 (Torso)</span> <span>▶</span></button>
+                    <button class="dispatch-btn rescate" onclick="despacharRutina('CASA_RESCATE_2_v1.0')"><span>🏠 Rescate Casa 2 (Pierna)</span> <span>▶</span></button>
+
+                    <hr style="border:0; border-top:1px dashed var(--borde); margin:16px 0;">
+
+                    <button class="dispatch-btn audit" onclick="despacharRutina('TEST_ALFA_v1.0')"><span>🔬 Auditoría ALFA (Fuerza BAM)</span> <span>▶</span></button>
+                    <button class="dispatch-btn audit" onclick="despacharRutina('TEST_BETA_v1.0')"><span>🫁 Auditoría BETA (VO2Max)</span> <span>▶</span></button>
+                    <button class="dispatch-btn audit" onclick="despacharRutina('TEST_GAMMA_v1.0')"><span>🩺 Auditoría GAMMA (SNC HRR)</span> <span>▶</span></button>
+                </div>
+            `;
+        }
+
+        /* =========================================================================
+           AUDITORÍA Y GRÁFICOS NATIVOS (CANVAS)
+           ========================================================================= */
+        function dibujarGrafico(canvasId, dataArray, colorHex, labelText) {
+            let cvs = document.getElementById(canvasId);
+            if(!cvs) return;
+            let ctx = cvs.getContext('2d');
+            let w = cvs.width; let h = cvs.height;
+            ctx.clearRect(0,0,w,h);
+            
+            if(dataArray.length === 0) {
+                ctx.fillStyle = '#a1a1aa'; ctx.font = '12px sans-serif'; ctx.fillText('Sin datos suficientes', 10, h/2);
+                return;
+            }
+
+            let maxVal = Math.max(...dataArray) || 10;
+            let minVal = Math.min(...dataArray) || 0;
+            // Evitar gráficos planos si todo es 0
+            if(maxVal === minVal) { maxVal += 10; minVal = Math.max(0, minVal-10); }
+            
+            let padding = 15;
+            let stepX = (w - (padding*2)) / Math.max(dataArray.length - 1, 1);
+            let rangeY = maxVal - minVal;
+            let scaleY = (h - (padding*2)) / rangeY; 
+
+            ctx.beginPath();
+            ctx.strokeStyle = colorHex; 
+            ctx.lineWidth = 3;
+            
+            dataArray.forEach((val, i) => {
+                let x = padding + (i * stepX);
+                let y = h - padding - ((val - minVal) * scaleY);
+                if(i===0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Dibujar puntos
+            dataArray.forEach((val, i) => {
+                let x = padding + (i * stepX);
+                let y = h - padding - ((val - minVal) * scaleY);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(x-3, y-3, 6, 6);
+            });
+
+            // Label min/max
+            ctx.fillStyle = '#a1a1aa'; ctx.font = '10px monospace';
+            ctx.fillText(maxVal.toLocaleString() + ' ' + labelText, padding, padding);
+        }
+
+        function procesarDatosGrafico() {
+            // 1. Tonelaje Pierna Últimas 12 Semanas (agrupado por semanas)
+            let tonSemanas = new Array(12).fill(0);
+            let hrrDeltas = []; // Delta = Pico - Final
+            let fatmaxHist = new Array(12).fill(0);
+
+            let hoy = new Date();
+            for(let i=0; i<localStorage.length; i++) {
+                let k = localStorage.key(i);
+                // Extraer HRR
+                if(k === `logs_${estado.perfil}_ValidacionMensualHRR`) {
+                    let logs = JSON.parse(localStorage.getItem(k)) || [];
+                    // Tomar últimos 8 registros
+                    logs.slice(-8).forEach(l => {
+                        hrrDeltas.push(l.val1 - l.val2); // Delta vagal
+                    });
+                }
+                // Extraer Fatmax
+                if(k.startsWith(`fatmax_semanal_${estado.perfil}_`)) {
+                    let fechaLog = new Date(k.replace(`fatmax_semanal_${estado.perfil}_`, ''));
+                    let diffWeeks = Math.floor((hoy - fechaLog) / (1000 * 60 * 60 * 24 * 7));
+                    if(diffWeeks >= 0 && diffWeeks < 12) {
+                        fatmaxHist[11 - diffWeeks] += Math.floor((parseInt(localStorage.getItem(k))||0)/60);
+                    }
+                }
+            }
+
+            // Calcular Tonelaje Semanal de todo (excluyendo casa/cardio)
+            for (let r in estado.db.rutinas) {
+                estado.db.rutinas[r].ejercicios.forEach(ej => {
+                    if(ej.tipo !== "time_seconds" && ej.tipo !== "time_to_failure" && !ej.es_casa && !ej.nombre.includes("HRR") && !ej.nombre.includes("Noruego")) {
+                        let hash = ej.nombre.replace(/[^a-zA-Z0-9]/g, ''); 
+                        let logs = JSON.parse(localStorage.getItem(`logs_${estado.perfil}_${hash}`)) || [];
+                        logs.forEach(l => {
+                            if(!l.is_aprox) {
+                                let fechaLog = new Date(l.fecha);
+                                let diffWeeks = Math.floor((hoy - fechaLog) / (1000 * 60 * 60 * 24 * 7));
+                                if(diffWeeks >= 0 && diffWeeks < 12) {
+                                    tonSemanas[11 - diffWeeks] += (l.val1 * l.val2);
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+
+            return { tonSemanas, hrrDeltas, fatmaxHist };
+        }
+
+        function renderMetricas() {
+            let canvas = document.getElementById('app-canvas');
+            let t = calcularTotalHoy();
+            
+            canvas.innerHTML = `
+                <div class="card-exercise" style="text-align:center; border-color:var(--oro); box-shadow: 0 0 15px rgba(251, 191, 36, 0.1);">
+                    <h3>📊 AUDITORÍA DIARIA</h3>
+                    <div style="font-size:3rem; font-weight:900; color:var(--oro); margin:10px 0;">${t.toLocaleString()} kg</div>
+                    <p style="color:var(--texto-sec); font-size:0.8rem; font-weight:900;">Volumen Efectivo Movilizado Hoy</p>
+                </div>
+
+                <!-- MAPA ANATÓMICO DE PUSHEEN -->
+                <div class="card-exercise mapa-anatomico" style="padding:12px;">
+                    <h3 style="text-align:center; margin-bottom:4px; font-size:1rem; color:var(--accent);">🐱 MAPA ANATÓMICO</h3>
+                    <p style="font-size:0.6rem; color:var(--texto-sec); text-align:center; margin-bottom:8px;">Último grupo muscular trabajado.</p>
+                    ${SVG_PUSHEEN}
+                </div>
+
+                <!-- CANVAS NATIVOS DE TENDENCIA CLÍNICA -->
+                <div class="card-exercise">
+                    <h3 style="text-align:center; margin-bottom:4px; font-size:1rem; color:var(--accent);">📈 TONELAJE (12 SEM)</h3>
+                    <p style="font-size:0.6rem; color:var(--texto-sec); text-align:center; margin-bottom:8px;">Si la línea se aplana, aplica Descarga táctica.</p>
+                    <canvas id="trend-volumen" width="300" height="120" style="width:100%; border-bottom:1px solid var(--borde); border-left:1px solid var(--borde);"></canvas>
+                </div>
+
+                <div class="card-exercise">
+                    <h3 style="text-align:center; margin-bottom:4px; font-size:1rem; color:var(--azul-clinico);">🫀 RECUPERACIÓN VAGAL (HRR Deltas)</h3>
+                    <p style="font-size:0.6rem; color:var(--texto-sec); text-align:center; margin-bottom:8px;">Caída de lpm tras test Gamma. Caída alta = SNC Óptimo.</p>
+                    <canvas id="trend-hrr" width="300" height="120" style="width:100%; border-bottom:1px solid var(--borde); border-left:1px solid var(--borde);"></canvas>
+                </div>
+
+                <div class="card-exercise">
+                    <h3 style="text-align:center; margin-bottom:4px; font-size:1rem; color:#8b5cf6;">🫁 ACUMULACIÓN ZONA 2 (12 SEM)</h3>
+                    <p style="font-size:0.6rem; color:var(--texto-sec); text-align:center; margin-bottom:8px;">Minutos de FatMax semanales invertidos en Longevidad.</p>
+                    <canvas id="trend-fatmax" width="300" height="120" style="width:100%; border-bottom:1px solid var(--borde); border-left:1px solid var(--borde);"></canvas>
+                </div>
+                
+                <div class="card-exercise">
+                    <h3 style="text-align:center; margin-bottom:12px; font-size:1rem;">☁️ CONFIGURACIÓN CLOUD (WEBHOOK)</h3>
+                    <p style="font-size:0.7rem; color:var(--texto-sec); text-align:center; margin-bottom:8px;">Pega aquí la URL de tu Google Apps Script para respaldo silencioso. Se subirá automáticamente al terminar tu sesión.</p>
+                    <input type="text" id="webhook-url" placeholder="https://script.google.com/macros/..." style="font-size:0.8rem; background:var(--bg-control); padding:10px; border-radius:8px; border:1px solid var(--borde); margin-bottom:12px; font-weight:normal;" onchange="localStorage.setItem('google_sheet_webhook', this.value)">
+                    
+                    <button class="btn-record" style="width:100%; height:45px; background:#0a84ff; font-size:0.9rem; margin-bottom:10px; box-shadow:none;" onclick="exportarBackupCompleto()">📥 EXPORTAR JSON MANUAL</button>
+                    <button class="btn-undo" style="width:100%; height:45px; font-size:0.9rem;" onclick="document.getElementById('input-import-file').click()">📤 IMPORTAR JSON MANUAL</button>
+                    <input type="file" id="input-import-file" style="display:none;" accept=".json" onchange="importarBackupCompleto(this)">
+                </div>
+            `;
+
+            // Restaurar webhook input
+            let savedHook = localStorage.getItem('google_sheet_webhook');
+            if(savedHook) document.getElementById('webhook-url').value = savedHook;
+
+            // Re-iluminar el último grupo muscular trabajado por este perfil
+            iluminarMusculo(localStorage.getItem(`ultimo_musculo_${estado.perfil}`) || "");
+
+            // Dibujar en los Canvas
+            setTimeout(() => {
+                let data = procesarDatosGrafico();
+                dibujarGrafico('trend-volumen', data.tonSemanas, '#22c55e', 'kg');
+                dibujarGrafico('trend-hrr', data.hrrDeltas, '#38bdf8', 'lpm caída');
+                dibujarGrafico('trend-fatmax', data.fatmaxHist, '#8b5cf6', 'min');
+            }, 150);
+        }
+
+        /* --- PERSISTENCIA NUBE SILENCIOSA --- */
+        async function sincronizarNubeSilenciosa() {
+            const webhook = localStorage.getItem('google_sheet_webhook');
+            if(!webhook) return; 
+
+            let dataObj = {}; 
+            for(let i=0; i<localStorage.length; i++){ let k = localStorage.key(i); dataObj[k] = localStorage.getItem(k); } 
+            
+            try {
+                fetch(webhook, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ perfil: estado.perfil, timestamp: new Date().toISOString(), payload: JSON.stringify(dataObj) })
+                });
+                console.log("Datos enviados al Webhook exitosamente.");
+            } catch(e) {
+                console.log("Error de red. El respaldo se encolará para la siguiente sesión.");
+            }
+        }
+
+        /* --- PERSISTENCIA LOCAL MANUAL --- */
+        function exportarBackupCompleto() { 
+            let data = {}; 
+            for(let i=0; i<localStorage.length; i++){ let k = localStorage.key(i); data[k] = localStorage.getItem(k); } 
+            const a = document.createElement("a"); 
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"})); 
+            a.download = `PUSHEEN_FIT_BACKUP_${estado.perfil}_${new Date().toISOString().slice(0,10)}.json`; 
+            a.click(); 
+            mostrarToast("📥 Respaldo local generado."); 
+        }
+
+        function importarBackupCompleto(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm("⚠️ ADVERTENCIA: Esto sobreescribirá tus datos locales. ¿Proceder?")) {
+                        localStorage.clear();
+                        for (let k in data) { localStorage.setItem(k, data[k]); }
+                        mostrarToast("✓ Datos inyectados con éxito. Reiniciando...");
+                        setTimeout(() => location.reload(), 1500);
+                    }
+                } catch(err) { alert("❌ Error crítico: Archivo JSON no válido."); }
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = () => { 
+            Object.keys(estado.db.rutinas).forEach(r => estado.indices[r] = 0); 
+            // Cargar Triage Diario
+            let hoy = new Date().toISOString().slice(0,10);
+            let triageStatus = localStorage.getItem(`triage_done_${hoy}`);
+            if(!triageStatus) {
+                document.getElementById('modal-triage').style.display = 'flex';
+                localStorage.setItem(`triage_done_${hoy}`, 'true');
+            } else {
+                document.getElementById('modal-triage').style.display = 'none';
+            }
+            cambiarVista('planeacion'); 
+        };
+    </script>
+</body>
+</html>
